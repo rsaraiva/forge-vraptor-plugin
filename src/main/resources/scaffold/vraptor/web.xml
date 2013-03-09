@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.0"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+
+   <display-name>forge-scaffold-vraptor-app</display-name>
+
+   <session-config>
+      <session-timeout>30</session-timeout>
+   </session-config>
+
+   <filter>
+      <filter-name>vraptor</filter-name>
+      <filter-class>br.com.caelum.vraptor.VRaptor</filter-class>
+   </filter>
+   <filter-mapping>
+      <filter-name>vraptor</filter-name>
+      <url-pattern>/*</url-pattern>
+      <dispatcher>FORWARD</dispatcher>
+      <dispatcher>REQUEST</dispatcher>
+   </filter-mapping>
+
+   <error-page>
+      <error-code>404</error-code>
+      <location>/error.jsp</location>
+   </error-page>
+   <error-page>
+      <error-code>500</error-code>
+      <location>/error.jsp</location>
+   </error-page>
+</web-app>

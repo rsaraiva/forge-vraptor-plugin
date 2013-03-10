@@ -18,6 +18,7 @@ import org.jboss.forge.project.dependencies.DependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
+import org.jboss.forge.project.facets.ResourceFacet;
 import org.jboss.forge.project.facets.WebResourceFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.Resource;
@@ -29,20 +30,20 @@ import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.Help;
 import org.jboss.forge.shell.plugins.RequiresFacet;
-import org.jboss.forge.spec.javaee.PersistenceFacet;
 import org.jboss.forge.spec.javaee.ServletFacet;
 import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
 import org.jboss.seam.render.template.CompiledTemplateResource;
 import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
-import org.jboss.shrinkwrap.descriptor.api.spec.servlet.web.WebAppDescriptor;
 
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
-@RequiresFacet({WebResourceFacet.class,
-    DependencyFacet.class,
-    PersistenceFacet.class})
+@RequiresFacet({
+    WebResourceFacet.class,
+    DependencyFacet.class
+})
 public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
+    
     //
     // Private statics
     //
@@ -56,13 +57,15 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private static final String ERROR_TEMPLATE = "scaffold/vraptor/error.jsp";
     private static final String FOOTER_TEMPLATE = "scaffold/vraptor/footer.jsp";
     private static final String HEADER_TEMPLATE = "scaffold/vraptor/header.jsp";
-    private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String WEB_XML_TEMPLATE = "scaffold/vraptor/web.xml";
+    private static final String HIBERNATE_CFG_TEMPLATE = "scaffold/vraptor/hibernate.cfg.xml";
+    private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String INDEX_CONTROLLER_TEMPLATE = "scaffold/vraptor/IndexController.jv";
     
     //
     // Protected members (nothing is private, to help subclassing)
     //
+    
     protected final ShellPrompt prompt;
     protected final TemplateCompiler compiler;
     protected final Event<InstallFacets> install;
@@ -72,6 +75,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource headerTemplate;
     protected CompiledTemplateResource indexTemplate;
     protected CompiledTemplateResource webXMLTemplate;
+    protected CompiledTemplateResource hibernateCfgTemplate;
     protected CompiledTemplateResource indexControllerTemplate;
     private Configuration config;
 
@@ -130,6 +134,9 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         }
         if (this.webXMLTemplate == null) {
             this.webXMLTemplate = compiler.compile(WEB_XML_TEMPLATE);
+        }
+        if (this.hibernateCfgTemplate == null) {
+            this.hibernateCfgTemplate = compiler.compile(HIBERNATE_CFG_TEMPLATE);
         }
         if (this.indexControllerTemplate == null) {
             this.indexControllerTemplate = compiler.compile(INDEX_CONTROLLER_TEMPLATE);
@@ -197,10 +204,16 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/vraptor-logo.png"),
                 getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/vraptor-logo.png"), overwrite));
 
-        // web.xml        
+        // web.xml
 
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"),
                 this.webXMLTemplate.render(context), overwrite));
+        
+        // hibernate.cfg.xml
+        
+        ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, resourceFacet.getResource("hibernate.cfg.xml"),
+                this.hibernateCfgTemplate.render(context), overwrite));
 
         return result;
     }
@@ -245,10 +258,10 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         
         DependencyFacet deps = project.getFacet(DependencyFacet.class);
         deps.addDirectDependency(VRAPTOR_DEPENDENCY);
-        deps.addDirectDependency(HIBERNATE_DEPENDENCY);
         deps.addDirectDependency(VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY);
         deps.addDirectDependency(H2_DEPENDENCY);
-        deps.addDirectDependency(JSTL_DEPENDENCY);
+        //deps.addDirectDependency(HIBERNATE_DEPENDENCY);
+        //deps.addDirectDependency(JSTL_DEPENDENCY);
     }
     
     @Override

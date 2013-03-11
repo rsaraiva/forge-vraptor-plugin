@@ -12,6 +12,5 @@
 		<property name="hibernate.show_sql">true</property>
 		<property name="hibernate.hbm2ddl.auto">create-drop</property>
 		<property name="hibernate.cache.provider_class">org.hibernate.cache.HashtableCacheProvider</property>
-		<mapping class="com.jboss.forge.scaffold.vraptor.app.model.Customer" />
 	</session-factory>
 </hibernate-configuration>

@@ -15,6 +15,7 @@ import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
 import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
+import org.jboss.forge.project.dependencies.ExcludedDependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
@@ -257,11 +258,15 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private void addMavenDependencies() {
         
         DependencyFacet deps = project.getFacet(DependencyFacet.class);
-        deps.addDirectDependency(VRAPTOR_DEPENDENCY);
+        
+        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies()
+              .add(DependencyBuilder.create("org.hibernate:hibernate-annotations:"));
+        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies()
+              .add(DependencyBuilder.create("org.hibernate:hibernate-entitymanager:"));
+        
         deps.addDirectDependency(VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY);
+        deps.addDirectDependency(VRAPTOR_DEPENDENCY);
         deps.addDirectDependency(H2_DEPENDENCY);
-        //deps.addDirectDependency(HIBERNATE_DEPENDENCY);
-        //deps.addDirectDependency(JSTL_DEPENDENCY);
     }
     
     @Override

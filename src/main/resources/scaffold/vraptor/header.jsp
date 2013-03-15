@@ -13,7 +13,7 @@
    <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
          <div class="container">
-            <a id="brandLink" name="brandLink" href="index.xhtml" class="brand">Forge-scaffold-javaee-app</a>
+            <a id="brandLink" name="brandLink" href="index.xhtml" class="brand">@{appName}</a>
             <div class="nav-collapse collapse">
                <ul class="nav">
                   <li><a href="http://forge.jboss.org/docs/important_plugins/ui-scaffolding.html">How to Customize</a></li>
@@ -28,9 +28,9 @@
          <a id="homeLink" name="homeLink" href="index.xhtml"> <img src="<c:url value="/resources/forge-logo.png"/>"
             alt="Forge... get hammered" border="0" />
          </a>
-         <ul>
+         <!-- ul>
             <li><a href="<c:url value="/customer/search"/>">Customer</a></li>
-         </ul>
+         </ul -->
       </div>
 
       <div id="content">

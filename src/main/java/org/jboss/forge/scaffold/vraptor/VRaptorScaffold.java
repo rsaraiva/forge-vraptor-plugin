@@ -4,18 +4,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.jboss.forge.env.Configuration;
+import org.jboss.forge.maven.MavenPluginFacet;
+import org.jboss.forge.maven.plugins.ConfigurationBuilder;
+import org.jboss.forge.maven.plugins.ConfigurationImpl;
+import org.jboss.forge.maven.plugins.ExecutionBuilder;
+import org.jboss.forge.maven.plugins.ExecutionImpl;
+import org.jboss.forge.maven.plugins.MavenPluginBuilder;
 import org.jboss.forge.parser.JavaParser;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
 import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
-import org.jboss.forge.project.dependencies.ExcludedDependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
@@ -36,19 +42,18 @@ import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
 import org.jboss.seam.render.template.CompiledTemplateResource;
 import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
+import org.metawidget.util.CollectionUtils;
+import org.metawidget.util.simple.StringUtils;
 
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
-@RequiresFacet({
-    WebResourceFacet.class,
-    DependencyFacet.class
-})
+@RequiresFacet({ WebResourceFacet.class, DependencyFacet.class })
 public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
-    
+
     //
     // Private statics
     //
-    
+
     private static final Dependency VRAPTOR_DEPENDENCY = DependencyBuilder.create("br.com.caelum:vraptor:3.4.1");
     private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder.create("org.hibernate:hibernate-entitymanager:4.1.10.Final");
     private static final Dependency VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY = DependencyBuilder.create("br.com.caelum.vraptor:vraptor-plugin-hibernate4:1.0.0");
@@ -62,14 +67,15 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private static final String HIBERNATE_CFG_TEMPLATE = "scaffold/vraptor/hibernate.cfg.xml";
     private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String INDEX_CONTROLLER_TEMPLATE = "scaffold/vraptor/IndexController.jv";
-    
+
     //
     // Protected members (nothing is private, to help subclassing)
     //
-    
+
     protected final ShellPrompt prompt;
     protected final TemplateCompiler compiler;
     protected final Event<InstallFacets> install;
+    protected int navigationTemplateIndent;
     protected TemplateResolver<ClassLoader> resolver;
     protected CompiledTemplateResource errorTemplate;
     protected CompiledTemplateResource footerTemplate;
@@ -84,10 +90,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     // Constructor
     //
     @Inject
-    public VRaptorScaffold(final Configuration config,
-            final ShellPrompt prompt,
-            final TemplateCompiler compiler,
-            final Event<InstallFacets> install) {
+    public VRaptorScaffold(final Configuration config, final ShellPrompt prompt, final TemplateCompiler compiler, final Event<InstallFacets> install) {
 
         this.config = config;
         this.prompt = prompt;
@@ -151,70 +154,52 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         WebResourceFacet web = project.getFacet(WebResourceFacet.class);
 
         loadTemplates();
+        generateTemplates(targetDir, overwrite);
 
         HashMap<Object, Object> context = getTemplateContext(targetDir, template);
 
         // Basic pages
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("error.jsp"),
-                this.errorTemplate.render(context), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("error.jsp"), this.errorTemplate.render(context), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("footer.jsp"),
-                this.footerTemplate.render(context), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("footer.jsp"), this.footerTemplate.render(context), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("header.jsp"),
-                this.headerTemplate.render(context), overwrite));
-        
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/WEB-INF/jsp/index/index.jsp"),
-                this.indexTemplate.render(context), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/WEB-INF/jsp/index/index.jsp"), this.indexTemplate.render(context), overwrite));
 
         // Static resources
 
         final String STATIC_RESOURCES_DIR = "/scaffold/vraptor";
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/add.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/add.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/add.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/add.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/bootstrap.css"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/bootstrap.css"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/bootstrap.css"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/bootstrap.css"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/false.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/false.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/false.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/false.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/favicon.ico"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/favicon.ico"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/favicon.ico"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/favicon.ico"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/forge-logo.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/forge-logo.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/forge-logo.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/forge-logo.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/forge-style.css"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/forge-style.css"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/forge-style.css"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/forge-style.css"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/jboss-community.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/jboss-community.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/jboss-community.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/jboss-community.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/remove.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/remove.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/remove.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/remove.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/search.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/search.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/search.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/search.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/true.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/true.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/true.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/true.png"), overwrite));
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/vraptor-logo.png"),
-                getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/vraptor-logo.png"), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/vraptor-logo.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/vraptor-logo.png"), overwrite));
 
         // web.xml
 
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"),
-                this.webXMLTemplate.render(context), overwrite));
-        
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"), this.webXMLTemplate.render(context), overwrite));
+
         // hibernate.cfg.xml
-        
+
         ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, resourceFacet.getResource("hibernate.cfg.xml"),
-                this.hibernateCfgTemplate.render(context), overwrite));
+        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, resourceFacet.getResource("hibernate.cfg.xml"), this.hibernateCfgTemplate.render(context), overwrite));
 
         return result;
     }
@@ -226,17 +211,16 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         for (String code : Arrays.asList("404", "500")) {
             for (Node errorPage : errorPages) {
-                if (code.equals(errorPage.getSingle("error-code").getText())
-                        && this.prompt.promptBoolean("Your web.xml already contains an error page for " + code + " status codes, replace it?")) {
+                if (code.equals(errorPage.getSingle("error-code").getText()) && this.prompt.promptBoolean("Your web.xml already contains an error page for " + code + " status codes, replace it?")) {
                     root.removeChild(errorPage);
                 }
             }
         }
         return webXML;
     }
-    
+
     private List<Resource<?>> generateIndexController(String targetDir, Resource<?> template, boolean overwrite) {
-        
+
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         HashMap<Object, Object> context = getTemplateContext(targetDir, template);
 
@@ -245,40 +229,84 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
             JavaClass indexController = JavaParser.parse(JavaClass.class, this.indexControllerTemplate.render(context));
             java.saveJavaSource(indexController);
-            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(indexController),
-                    indexController.toString(), overwrite));
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(indexController), indexController.toString(), overwrite));
 
         } catch (Exception e) {
             throw new RuntimeException("Error generating VRaptor scaffolding: IndexController", e);
         }
-        
+
         return result;
     }
     
-    private void addMavenDependencies() {
+    private List<Resource<?>> addStaticScanningMavenPlugin() {
+
+        List<Resource<?>> result = new ArrayList<Resource<?>>();
+        WebResourceFacet web = project.getFacet(WebResourceFacet.class);
+        ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
+        Node pom = XMLParser.parse(resourceFacet.getResource("../../../pom.xml").getResourceInputStream());
         
+        Node plugin = pom.getSingle("build").getSingle("plugins").createChild("plugin");
+        plugin.createChild("groupId").text("org.apache.maven.plugins");
+        plugin.createChild("artifactId").text("maven-antrun-plugin");
+        plugin.createChild("version").text("1.7");
+        
+        Node execution = plugin.createChild("executions").createChild("execution");
+        execution.createChild("id").text("static-scanning");
+        execution.createChild("phase").text("package");
+        execution.createChild("configuration").createChild("target")
+            .createChild("path").attribute("id", "build.classpath")
+            .createChild("fileset")
+                .attribute("dir", "${project.build.directory}/${project.build.finalName}/WEB-INF/lib")
+                .attribute("includes", "*.jar")
+                .getParent()
+            .getParent()
+            .createChild("java")
+                .attribute("classpathref", "build.classpath")
+                .attribute("classname", "br.com.caelum.vraptor.scan.VRaptorStaticScanning")
+                .attribute("fork", "true")
+                .createChild("arg").attribute("value", "${project.build.directory}/${project.build.finalName}/WEB-INF/web.xml")
+                .getParent()
+                .createChild("classpath").attribute("refid", "build.classpath")
+                .getParent()
+                .createChild("classpath").attribute("path", "${project.build.directory}/${project.build.finalName}/WEB-INF/classes")
+                .getParent()
+            .getParent()
+            .createChild("war")
+                .attribute("destfile", "${project.build.directory}/${project.build.finalName}.war")
+                .attribute("webxml", "${project.build.directory}/${project.build.finalName}/WEB-INF/web.xml")
+                .createChild("fileset").attribute("dir", "${project.build.directory}/${project.build.finalName}");
+        execution.createChild("goals")
+            .createChild("goal").text("run");
+        
+        result.add(web.createWebResource(XMLParser.toXMLString(pom), "../../../pom.xml"));
+        
+        return result;
+    }
+
+    private List<Resource<?>> addMavenDependencies() {
+
         DependencyFacet deps = project.getFacet(DependencyFacet.class);
-        
-        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies()
-              .add(DependencyBuilder.create("org.hibernate:hibernate-annotations:"));
-        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies()
-              .add(DependencyBuilder.create("org.hibernate:hibernate-entitymanager:"));
-        
+
+        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies().add(DependencyBuilder.create("org.hibernate:hibernate-annotations:"));
+        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies().add(DependencyBuilder.create("org.hibernate:hibernate-entitymanager:"));
+
         deps.addDirectDependency(VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY);
         deps.addDirectDependency(VRAPTOR_DEPENDENCY);
         deps.addDirectDependency(H2_DEPENDENCY);
+        
+        return new ArrayList<Resource<?>>();
     }
-    
+
     @Override
     public List<Resource<?>> setup(String targetDir, Resource<?> template, boolean overwrite) {
-        
-        addMavenDependencies();
-        
+
         List<Resource<?>> resources = new ArrayList<Resource<?>>();
-        
+
         resources.addAll(generateIndex(targetDir, template, overwrite));
         resources.addAll(generateIndexController(targetDir, template, overwrite));
-        
+        resources.addAll(addMavenDependencies());
+        resources.addAll(addStaticScanningMavenPlugin());
+
         return resources;
     }
 
@@ -294,7 +322,21 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     @Override
     public List<Resource<?>> generateTemplates(String targetDir, boolean overwrite) {
-        throw new UnsupportedOperationException("generateTemplates - Not supported yet.");
+        List<Resource<?>> result = new ArrayList<Resource<?>>();
+
+        Map<Object, Object> context = CollectionUtils.newHashMap();
+        context.put("appName", StringUtils.uncamelCase(this.project.getProjectRoot().getName()));
+        context.put("targetDir", targetDir);
+
+        try {
+            WebResourceFacet web = this.project.getFacet(WebResourceFacet.class);
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("header.jsp"), this.headerTemplate.render(context), overwrite));
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating default templates", e);
+        }
+
+        return result;
     }
 
     @Override

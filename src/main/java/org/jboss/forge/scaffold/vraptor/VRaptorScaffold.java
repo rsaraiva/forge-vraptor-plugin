@@ -10,12 +10,6 @@ import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.jboss.forge.env.Configuration;
-import org.jboss.forge.maven.MavenPluginFacet;
-import org.jboss.forge.maven.plugins.ConfigurationBuilder;
-import org.jboss.forge.maven.plugins.ConfigurationImpl;
-import org.jboss.forge.maven.plugins.ExecutionBuilder;
-import org.jboss.forge.maven.plugins.ExecutionImpl;
-import org.jboss.forge.maven.plugins.MavenPluginBuilder;
 import org.jboss.forge.parser.JavaParser;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
@@ -37,6 +31,7 @@ import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.Help;
 import org.jboss.forge.shell.plugins.RequiresFacet;
+import org.jboss.forge.spec.javaee.PersistenceFacet;
 import org.jboss.forge.spec.javaee.ServletFacet;
 import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
@@ -47,31 +42,26 @@ import org.metawidget.util.simple.StringUtils;
 
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
-@RequiresFacet({ WebResourceFacet.class, DependencyFacet.class })
+@RequiresFacet({WebResourceFacet.class, DependencyFacet.class, PersistenceFacet.class})
 public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     //
     // Private statics
     //
-
     private static final Dependency VRAPTOR_DEPENDENCY = DependencyBuilder.create("br.com.caelum:vraptor:3.4.1");
-    private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder.create("org.hibernate:hibernate-entitymanager:4.1.10.Final");
-    private static final Dependency VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY = DependencyBuilder.create("br.com.caelum.vraptor:vraptor-plugin-hibernate4:1.0.0");
-    private static final Dependency H2_DEPENDENCY = DependencyBuilder.create("com.h2database:h2:1.3.161");
-    private static final Dependency JSTL_DEPENDENCY = DependencyBuilder.create("javax.servlet:jstl:1.2");
-
+    private static final Dependency HSQLDB_DEPENDENCY = DependencyBuilder.create("hsqldb:hsqldb:1.8.0.10");
+    private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder.create("org.hibernate:hibernate-entitymanager:3.6.6.Final:provided");
     private static final String ERROR_TEMPLATE = "scaffold/vraptor/error.jsp";
     private static final String FOOTER_TEMPLATE = "scaffold/vraptor/footer.jsp";
     private static final String HEADER_TEMPLATE = "scaffold/vraptor/header.jsp";
     private static final String WEB_XML_TEMPLATE = "scaffold/vraptor/web.xml";
-    private static final String HIBERNATE_CFG_TEMPLATE = "scaffold/vraptor/hibernate.cfg.xml";
     private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String INDEX_CONTROLLER_TEMPLATE = "scaffold/vraptor/IndexController.jv";
-
+    private static final String CONTROLLER_TEMPLATE = "scaffold/vraptor/Controller.jv";
+    
     //
     // Protected members (nothing is private, to help subclassing)
     //
-
     protected final ShellPrompt prompt;
     protected final TemplateCompiler compiler;
     protected final Event<InstallFacets> install;
@@ -82,8 +72,8 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource headerTemplate;
     protected CompiledTemplateResource indexTemplate;
     protected CompiledTemplateResource webXMLTemplate;
-    protected CompiledTemplateResource hibernateCfgTemplate;
     protected CompiledTemplateResource indexControllerTemplate;
+    protected CompiledTemplateResource controllerTemplate;
     private Configuration config;
 
     //
@@ -139,11 +129,11 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         if (this.webXMLTemplate == null) {
             this.webXMLTemplate = compiler.compile(WEB_XML_TEMPLATE);
         }
-        if (this.hibernateCfgTemplate == null) {
-            this.hibernateCfgTemplate = compiler.compile(HIBERNATE_CFG_TEMPLATE);
-        }
         if (this.indexControllerTemplate == null) {
             this.indexControllerTemplate = compiler.compile(INDEX_CONTROLLER_TEMPLATE);
+        }
+        if (this.controllerTemplate == null) {
+            this.controllerTemplate = compiler.compile(CONTROLLER_TEMPLATE);
         }
     }
 
@@ -196,11 +186,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"), this.webXMLTemplate.render(context), overwrite));
 
-        // hibernate.cfg.xml
-
-        ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
-        result.add(ScaffoldUtil.createOrOverwrite(this.prompt, resourceFacet.getResource("hibernate.cfg.xml"), this.hibernateCfgTemplate.render(context), overwrite));
-
         return result;
     }
 
@@ -237,19 +222,19 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         return result;
     }
-    
+
     private List<Resource<?>> addStaticScanningMavenPlugin() {
 
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         WebResourceFacet web = project.getFacet(WebResourceFacet.class);
         ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
         Node pom = XMLParser.parse(resourceFacet.getResource("../../../pom.xml").getResourceInputStream());
-        
+
         Node plugin = pom.getSingle("build").getSingle("plugins").createChild("plugin");
         plugin.createChild("groupId").text("org.apache.maven.plugins");
         plugin.createChild("artifactId").text("maven-antrun-plugin");
         plugin.createChild("version").text("1.7");
-        
+
         Node execution = plugin.createChild("executions").createChild("execution");
         execution.createChild("id").text("static-scanning");
         execution.createChild("phase").text("package");
@@ -277,23 +262,20 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
                 .createChild("fileset").attribute("dir", "${project.build.directory}/${project.build.finalName}");
         execution.createChild("goals")
             .createChild("goal").text("run");
-        
+
         result.add(web.createWebResource(XMLParser.toXMLString(pom), "../../../pom.xml"));
-        
+
         return result;
     }
 
     private List<Resource<?>> addMavenDependencies() {
 
         DependencyFacet deps = project.getFacet(DependencyFacet.class);
-
-        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies().add(DependencyBuilder.create("org.hibernate:hibernate-annotations:"));
-        VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY.getExcludedDependencies().add(DependencyBuilder.create("org.hibernate:hibernate-entitymanager:"));
-
-        deps.addDirectDependency(VRAPTOR_HIBERNATE_PLUGIN_DEPENDENCY);
-        deps.addDirectDependency(VRAPTOR_DEPENDENCY);
-        deps.addDirectDependency(H2_DEPENDENCY);
         
+        deps.addDirectDependency(HIBERNATE_DEPENDENCY);
+        deps.addDirectDependency(VRAPTOR_DEPENDENCY);
+        deps.addDirectDependency(HSQLDB_DEPENDENCY);
+
         return new ArrayList<Resource<?>>();
     }
 
@@ -340,8 +322,25 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     }
 
     @Override
-    public List<Resource<?>> generateFromEntity(String targetDir, Resource<?> template, JavaClass entity, boolean overwrite) {
-        throw new UnsupportedOperationException("generateFromEntity - Not supported yet.");
+    public List<Resource<?>> generateFromEntity(String targetDir, final Resource<?> template, final JavaClass entity, boolean overwrite) {
+        List<Resource<?>> result = new ArrayList<Resource<?>>();
+        try {
+            JavaSourceFacet java = this.project.getFacet(JavaSourceFacet.class);
+
+            loadTemplates();
+            Map<Object, Object> context = CollectionUtils.newHashMap();
+            context.put("entity", entity);
+
+            // Create the Controller for this entity
+            JavaClass controller = JavaParser.parse(JavaClass.class, this.controllerTemplate.render(context));
+            controller.setPackage(java.getBasePackage() + ".view");
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(controller), controller.toString(), overwrite));
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating vraptor scaffolding: " + e.getMessage(), e);
+        }
+
+        return result;
     }
 
     @Override

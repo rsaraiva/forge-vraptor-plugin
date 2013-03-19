@@ -213,7 +213,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             JavaSourceFacet java = project.getFacet(JavaSourceFacet.class);
 
             JavaClass indexController = JavaParser.parse(JavaClass.class, this.indexControllerTemplate.render(context));
-            java.saveJavaSource(indexController);
+            indexController.setPackage(java.getBasePackage() + ".view");
             result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(indexController), indexController.toString(), overwrite));
 
         } catch (Exception e) {
@@ -330,6 +330,8 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             loadTemplates();
             Map<Object, Object> context = CollectionUtils.newHashMap();
             context.put("entity", entity);
+            
+            //TODO: Prepare qbeMetawidget here
 
             // Create the Controller for this entity
             JavaClass controller = JavaParser.parse(JavaClass.class, this.controllerTemplate.render(context));

@@ -6,22 +6,22 @@ import org.junit.Test;
 
 public class VRaptorScaffoldTest extends AbstractVRaptorScaffoldTest {
 
-    @Test
+    //@Test
     public void testSetupScaffold() throws Exception {
         Project project = setupScaffoldProject();
         Assert.assertTrue(project.hasFacet(VRaptorScaffold.class));
     }
-    
+
     @Test
-    public void testGenerateFromEntity() throws Exception
-    {
+    public void testGenerateFromEntity() throws Exception {
         Project project = setupScaffoldProject();
 
         queueInputLines("");
         getShell().execute("entity --named Customer");
         getShell().execute("field string --named firstName");
         getShell().execute("field string --named lastName");
-        
-        // continue
+
+        queueInputLines("", "", "", "");
+        getShell().execute("scaffold from-entity");
     }
 }

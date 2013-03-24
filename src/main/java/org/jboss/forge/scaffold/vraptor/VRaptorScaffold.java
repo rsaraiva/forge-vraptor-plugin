@@ -332,7 +332,9 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
      */
     @Override
     public void setProject(Project project) {
+        
         super.setProject(project);
+        
         resetMetaWidgets();
     }
 
@@ -393,10 +395,20 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         try {
             JavaSourceFacet java = this.project.getFacet(JavaSourceFacet.class);
+            ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
 
             loadTemplates();
+            
+            // add class mapping to persistence.xml
+            Node persistenceXml = XMLParser.parse(resourceFacet.getResource("META-INF/persistence.xml").getResourceInputStream());
+            Node unit = persistenceXml.getSingle("persistence-unit");
+            unit.createChild("class").text(entity.getQualifiedName());
+            
+            // context
             Map<Object, Object> context = CollectionUtils.newHashMap();
             context.put("entity", entity);
+            String ccEntity = StringUtils.decapitalize(entity.getName());
+            context.put("ccEntity", ccEntity);
             
             // Prepare qbeMetawidget
             this.qbeMetawidget.setPath(entity.getQualifiedName());

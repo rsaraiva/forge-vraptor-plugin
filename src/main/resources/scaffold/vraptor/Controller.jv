@@ -35,7 +35,7 @@ public class @{entity.getName()}Controller {
         Root<@{entity.getName()}> from = query.from(@{entity.getName()}.class);
         CriteriaQuery<@{entity.getName()}> select = query.select(from);
         
-        //TODO: query by example metawidget here
+        @{qbeMetawidget}
         
         result.include("customers", entityManager.createQuery(select).getResultList());
     }

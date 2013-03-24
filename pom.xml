@@ -1,71 +1,101 @@
 <?xml version="1.0"?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>forge-parent</artifactId>
-        <groupId>org.jboss.forge</groupId>
-        <version>1.2.2-SNAPSHOT</version>
-        <relativePath>../../core/pom.xml</relativePath>
-    </parent>
+    <groupId>org.jboss.forge</groupId>
     <artifactId>forge-scaffold-vraptor</artifactId>
+    <version>1.2.2-SNAPSHOT</version>
     <name>plugin-vraptor</name>
     <description>Forge - Scaffold Provider for VRaptor</description>
+    
+    <properties>
+        <forge.api.version>1.2.2-SNAPSHOT</forge.api.version>
+        <forge.test.version>1.2.2-SNAPSHOT</forge.test.version>
+        <metawidget.version>2.4</metawidget.version>
+    </properties>
+    
     <dependencies>
+        <dependency>
+            <groupId>org.jboss.seam.render</groupId>
+            <artifactId>seam-render</artifactId>
+            <version>1.0.0.Final</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-scaffold-api</artifactId>
+            <version>${forge.api.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-javaee-api</artifactId>
+            <version>${forge.api.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-maven-api</artifactId>
+            <version>${forge.api.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.metawidget.modules</groupId>
             <artifactId>metawidget-all</artifactId>
             <version>2.4</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-test-harness</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.forge</groupId>
-            <artifactId>forge-test-harness-web</artifactId>
+            <version>${forge.test.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-shell</artifactId>
+            <version>${forge.test.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-scaffold-plugins</artifactId>
+            <version>${forge.test.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-javaee-impl</artifactId>
+            <version>${forge.test.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.forge</groupId>
             <artifactId>forge-dev-plugins</artifactId>
+            <version>${forge.test.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.seam.render</groupId>
-            <artifactId>seam-render</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
+    
+    <repositories>
+        <repository>
+            <id>JBOSS_NEXUS</id>
+            <url>http://repository.jboss.org/nexus/content/groups/public</url>
+        </repository>
+    </repositories>
+    
+    <build>
+        <finalName>plugin-vraptor</finalName>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

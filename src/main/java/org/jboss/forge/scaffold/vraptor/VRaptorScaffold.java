@@ -1,10 +1,12 @@
 package org.jboss.forge.scaffold.vraptor;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
@@ -14,6 +16,7 @@ import org.jboss.forge.parser.JavaParser;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
+import org.jboss.forge.project.Project;
 import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
@@ -27,16 +30,19 @@ import org.jboss.forge.scaffold.AccessStrategy;
 import org.jboss.forge.scaffold.ScaffoldProvider;
 import org.jboss.forge.scaffold.TemplateStrategy;
 import org.jboss.forge.scaffold.util.ScaffoldUtil;
+import org.jboss.forge.scaffold.vraptor.metawidget.config.ForgeConfigReader;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.Help;
 import org.jboss.forge.shell.plugins.RequiresFacet;
+import org.jboss.forge.shell.util.Streams;
 import org.jboss.forge.spec.javaee.PersistenceFacet;
 import org.jboss.forge.spec.javaee.ServletFacet;
 import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
 import org.jboss.seam.render.template.CompiledTemplateResource;
 import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
+import org.metawidget.statically.javacode.StaticJavaMetawidget;
 import org.metawidget.util.CollectionUtils;
 import org.metawidget.util.simple.StringUtils;
 
@@ -74,6 +80,9 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource webXMLTemplate;
     protected CompiledTemplateResource indexControllerTemplate;
     protected CompiledTemplateResource controllerTemplate;
+    protected int controllerTemplateQbeMetawidgetIndent;
+    protected StaticJavaMetawidget qbeMetawidget;
+    
     private Configuration config;
 
     //
@@ -112,8 +121,32 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         context.put("targetDir", targetDir);
         return context;
     }
+    
+    /**
+     * Parses the given XML and determines the indent of the given String
+     * namespaces that Metawidget introduces.
+     */
+    protected int parseIndent(final String template, final String indentOf) {
+        int indent = 0;
+        int indexOf = template.indexOf(indentOf);
+
+        while ((indexOf >= 0) && (template.charAt(indexOf) != '\n')) {
+            if (template.charAt(indexOf) == '\t') {
+                indent++;
+            }
+
+            indexOf--;
+        }
+
+        return indent;
+    }
 
     protected void loadTemplates() {
+        if (this.controllerTemplate == null) {
+            this.controllerTemplate = compiler.compile(CONTROLLER_TEMPLATE);
+            String template = Streams.toString(this.controllerTemplate.getSourceTemplateResource().getInputStream());
+            this.controllerTemplateQbeMetawidgetIndent = parseIndent(template, "@{qbeMetawidget}");
+        }
         if (this.errorTemplate == null) {
             this.errorTemplate = this.compiler.compile(ERROR_TEMPLATE);
         }
@@ -131,9 +164,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         }
         if (this.indexControllerTemplate == null) {
             this.indexControllerTemplate = compiler.compile(INDEX_CONTROLLER_TEMPLATE);
-        }
-        if (this.controllerTemplate == null) {
-            this.controllerTemplate = compiler.compile(CONTROLLER_TEMPLATE);
         }
     }
 
@@ -292,6 +322,40 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         return resources;
     }
 
+    /**
+     * Overridden to setup the Metawidgets.
+     * <p>
+     * Metawidgets must be configured per project <em>and per Forge
+     * invocation</em>. It is not sufficient to simply configure them in
+     * <code>setup</code> because the user may restart Forge and not run
+     * <code>scaffold setup</code> a second time.
+     */
+    @Override
+    public void setProject(Project project) {
+        super.setProject(project);
+        resetMetaWidgets();
+    }
+
+    private void resetMetaWidgets() {
+        ForgeConfigReader configReader = new ForgeConfigReader(this.config, this.project);
+
+//      this.entityMetawidget = new StaticHtmlMetawidget();
+//      this.entityMetawidget.setConfigReader(configReader);
+//      this.entityMetawidget.setConfig("scaffold/vraptor/metawidget-entity.xml");
+//
+//      this.searchMetawidget = new StaticHtmlMetawidget();
+//      this.searchMetawidget.setConfigReader(configReader);
+//      this.searchMetawidget.setConfig("scaffold/vraptor/metawidget-search.xml");
+//
+//      this.beanMetawidget = new StaticHtmlMetawidget();
+//      this.beanMetawidget.setConfigReader(configReader);
+//      this.beanMetawidget.setConfig("scaffold/vraptor/metawidget-bean.xml");
+
+        this.qbeMetawidget = new StaticJavaMetawidget();
+        this.qbeMetawidget.setConfigReader(configReader);
+        this.qbeMetawidget.setConfig("scaffold/vraptor/metawidget-qbe.xml");
+    }
+
     @Override
     public TemplateStrategy getTemplateStrategy() {
         return new VRaptorTemplateStrategy(this.project);
@@ -323,6 +387,9 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     @Override
     public List<Resource<?>> generateFromEntity(String targetDir, final Resource<?> template, final JavaClass entity, boolean overwrite) {
+        
+        resetMetaWidgets();
+        
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         try {
             JavaSourceFacet java = this.project.getFacet(JavaSourceFacet.class);
@@ -331,7 +398,17 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             Map<Object, Object> context = CollectionUtils.newHashMap();
             context.put("entity", entity);
             
-            //TODO: Prepare qbeMetawidget here
+            // Prepare qbeMetawidget
+            this.qbeMetawidget.setPath(entity.getQualifiedName());
+            StringWriter stringWriter = new StringWriter();
+            System.out.println("*** " + this.qbeMetawidget);
+            System.out.println("*** " + this.controllerTemplateQbeMetawidgetIndent);
+            this.qbeMetawidget.write(stringWriter, this.controllerTemplateQbeMetawidgetIndent);
+            context.put("qbeMetawidget", stringWriter.toString().trim());
+            
+            //Set<String> qbeMetawidgetImports = this.qbeMetawidget.getImports();
+            //qbeMetawidgetImports.remove(entity.getQualifiedName());
+            //context.put("qbeMetawidgetImports", CollectionUtils.toString(qbeMetawidgetImports, ";\r\nimport ", true, false));
 
             // Create the Controller for this entity
             JavaClass controller = JavaParser.parse(JavaClass.class, this.controllerTemplate.render(context));

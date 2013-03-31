@@ -311,7 +311,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     @Override
     public List<Resource<?>> setup(String targetDir, Resource<?> template, boolean overwrite) {
-
+        
         List<Resource<?>> resources = new ArrayList<Resource<?>>();
 
         resources.addAll(generateIndex(targetDir, template, overwrite));
@@ -355,7 +355,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         this.qbeMetawidget = new StaticJavaMetawidget();
         this.qbeMetawidget.setConfigReader(configReader);
-        this.qbeMetawidget.setConfig("scaffold/vraptor/metawidget-qbe.xml");
+        this.qbeMetawidget.setConfig("/scaffold/vraptor/metawidget-qbe.xml");
     }
 
     @Override
@@ -413,8 +413,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             // Prepare qbeMetawidget
             this.qbeMetawidget.setPath(entity.getQualifiedName());
             StringWriter stringWriter = new StringWriter();
-            System.out.println("*** " + this.qbeMetawidget);
-            System.out.println("*** " + this.controllerTemplateQbeMetawidgetIndent);
             this.qbeMetawidget.write(stringWriter, this.controllerTemplateQbeMetawidgetIndent);
             context.put("qbeMetawidget", stringWriter.toString().trim());
             

@@ -7,8 +7,8 @@ public class AbstractVRaptorScaffoldTest extends AbstractShellTest {
 
     protected Project setupScaffoldProject() throws Exception {
         Project project = initializeJavaProject();
-        queueInputLines("HIBERNATE", "CUSTOM_JDBC", "", "", "");
-        getShell().execute("persistence setup --named default --database HSQLDB_IN_MEMORY --jdbcDriver org.hsqldb.jdbcDriver --jdbcURL jdbc:hsqldb:mem:test --jdbcUsername sa --jdbcPassword sa");
+        queueInputLines("", "", "", "");
+        getShell().execute("persistence setup --provider HIBERNATE --container CUSTOM_NON_JTA --named default --jndiDataSource java:jboss/datasources/ExampleDS");
         queueInputLines("", "", "", "");
         getShell().execute("scaffold setup --scaffoldType vraptor");
         return project;

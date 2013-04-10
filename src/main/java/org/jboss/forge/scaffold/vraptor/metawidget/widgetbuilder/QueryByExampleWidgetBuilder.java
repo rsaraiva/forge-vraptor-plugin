@@ -25,108 +25,93 @@ import org.metawidget.util.WidgetBuilderUtils;
 import org.metawidget.util.simple.StringUtils;
 import org.metawidget.widgetbuilder.iface.WidgetBuilder;
 
-public class QueryByExampleWidgetBuilder
-         implements WidgetBuilder<StaticJavaWidget, StaticJavaMetawidget>
-{
-   //
-   // Public methods
-   //
+public class QueryByExampleWidgetBuilder implements WidgetBuilder<StaticJavaWidget, StaticJavaMetawidget> {
 
-   @Override
-   public StaticJavaWidget buildWidget(String elementName, Map<String, String> attributes,
-            StaticJavaMetawidget metawidget)
-   {
-      // Drill down
+    //
+    // Public methods
+    //
+    @Override
+    public StaticJavaWidget buildWidget(String elementName, Map<String, String> attributes, StaticJavaMetawidget metawidget) {
 
-      if (ENTITY.equals(elementName))
-      {
-         return null;
-      }
+        // Drill down
 
-      // Suppress
+        if (ENTITY.equals(elementName)) {
+            return null;
+        }
 
-      if (TRUE.equals(attributes.get(HIDDEN)))
-      {
-         return new StaticJavaStub();
-      }
+        // Suppress
 
-      Class<?> clazz = WidgetBuilderUtils.getActualClassOrType(attributes, null);
-      String name = attributes.get(NAME);
+        if (TRUE.equals(attributes.get(HIDDEN))) {
+            return new StaticJavaStub();
+        }
 
-      // String
+        Class<?> clazz = WidgetBuilderUtils.getActualClassOrType(attributes, null);
+        String name = attributes.get(NAME);
 
-      if (String.class.equals(clazz))
-      {
-         StaticJavaStub toReturn = new StaticJavaStub();
-         toReturn.getChildren().add(
-                  new JavaStatement("String " + name + " = example.get" + StringUtils.capitalize(name) + "()"));
-         JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null && !\"\".equals(" + name + "))");
-         ifNotEmpty.getChildren().add(
-                  new JavaStatement("predicatesList.add(builder.like(root.<String>get(\"" + name + "\"), '%' + " + name
-                           + " + '%'))"));
-         toReturn.getChildren().add(ifNotEmpty);
-         return toReturn;
-      }
+        // String
 
-      // int or short
+        if (String.class.equals(clazz)) {
+            StaticJavaStub toReturn = new StaticJavaStub();
+            toReturn.getChildren().add(new JavaStatement("String " + name + " = example.get" + StringUtils.capitalize(name) + "()"));
+            JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null && !\"\".equals(" + name + "))");
+            ifNotEmpty.getChildren().add(new JavaStatement("predicatesList.add(builder.like(root.<String>get(\"" + name + "\"), '%' + " + name + " + '%'))"));
+            toReturn.getChildren().add(ifNotEmpty);
+            return toReturn;
+        }
 
-      if (int.class.equals(clazz) || short.class.equals(clazz) || byte.class.equals(clazz))
-      {
-         StaticJavaStub toReturn = new StaticJavaStub();
-         toReturn.getChildren().add(
-                  new JavaStatement(clazz.getSimpleName() + " " + name + " = this.example.get"
-                           + StringUtils.capitalize(name) + "()"));
-         JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != 0)");
-         ifNotEmpty.getChildren().add(
-                  new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
-         toReturn.getChildren().add(ifNotEmpty);
-         return toReturn;
-      }
+        // int or short
 
-      // LOOKUP
+        if (int.class.equals(clazz) || short.class.equals(clazz) || byte.class.equals(clazz)) {
+            StaticJavaStub toReturn = new StaticJavaStub();
+            toReturn.getChildren().add(new JavaStatement(clazz.getSimpleName() + " " + name + " = example.get" + StringUtils.capitalize(name) + "()"));
+            JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != 0)");
+            ifNotEmpty.getChildren().add(new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
+            toReturn.getChildren().add(ifNotEmpty);
+            return toReturn;
+        }
 
-      String type = attributes.get(TYPE);
+        // LOOKUP
 
-      if (attributes.containsKey(LOOKUP))
-      {
-         StaticJavaStub toReturn = new StaticJavaStub();
-         JavaStatement getValue = new JavaStatement(ClassUtils.getSimpleName(type) + " " + name + " = this.example.get"
-                  + StringUtils.capitalize(name) + "()");
-         getValue.putImport(type);
-         toReturn.getChildren().add(getValue);
-         JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null)");
-         ifNotEmpty.getChildren().add(
-                  new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
-         toReturn.getChildren().add(ifNotEmpty);
-         return toReturn;
-      }
+        String type = attributes.get(TYPE);
 
-      // FACES_LOOKUP
+        if (attributes.containsKey(LOOKUP)) {
+            StaticJavaStub toReturn = new StaticJavaStub();
+            JavaStatement getValue = new JavaStatement(ClassUtils.getSimpleName(type) + " " + name + " = this.example.get"
+                    + StringUtils.capitalize(name) + "()");
+            getValue.putImport(type);
+            toReturn.getChildren().add(getValue);
+            JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null)");
+            ifNotEmpty.getChildren().add(
+                    new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
+            toReturn.getChildren().add(ifNotEmpty);
+            return toReturn;
+        }
 
-      if (attributes.containsKey(FACES_LOOKUP))
-      {
-         StaticJavaStub toReturn = new StaticJavaStub();
-         JavaStatement getValue = new JavaStatement(ClassUtils.getSimpleName(type) + " " + name + " = this.example.get"
-                  + StringUtils.capitalize(name) + "()");
-         getValue.putImport(type);
-         toReturn.getChildren().add(getValue);
-         JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null)");
-         ifNotEmpty.getChildren().add(
-                  new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
-         toReturn.getChildren().add(ifNotEmpty);
-         return toReturn;
-      }
+        // FACES_LOOKUP
 
-      // We tried searching against N_TO_MANY relationships, but had the following problems:
-      //
-      // 1. Difficult to make JPA Criteria Builder search for 'a Set having all of the following items'. For 'a Set
-      // having the following item' can do: predicatesList.add(root.join("customers").in(this.example.getCustomer()));
-      // 2. Cumbersome to have a new class for this.example that only has a single Customer, as opposed to a Set
-      // 3. Difficult to make JSF's h:selectOne* bind to a Set
-      // 4. Difficult to make JSF's h:selectMany* appear as a single item dropdown
-      //
-      // So we've left it out for now
+        if (attributes.containsKey(FACES_LOOKUP)) {
+            StaticJavaStub toReturn = new StaticJavaStub();
+            JavaStatement getValue = new JavaStatement(ClassUtils.getSimpleName(type) + " " + name + " = this.example.get"
+                    + StringUtils.capitalize(name) + "()");
+            getValue.putImport(type);
+            toReturn.getChildren().add(getValue);
+            JavaStatement ifNotEmpty = new JavaStatement("if (" + name + " != null)");
+            ifNotEmpty.getChildren().add(
+                    new JavaStatement("predicatesList.add(builder.equal(root.get(\"" + name + "\"), " + name + "))"));
+            toReturn.getChildren().add(ifNotEmpty);
+            return toReturn;
+        }
 
-      return new StaticJavaStub();
-   }
+        // We tried searching against N_TO_MANY relationships, but had the following problems:
+        //
+        // 1. Difficult to make JPA Criteria Builder search for 'a Set having all of the following items'. For 'a Set
+        // having the following item' can do: predicatesList.add(root.join("customers").in(this.example.getCustomer()));
+        // 2. Cumbersome to have a new class for this.example that only has a single Customer, as opposed to a Set
+        // 3. Difficult to make JSF's h:selectOne* bind to a Set
+        // 4. Difficult to make JSF's h:selectMany* appear as a single item dropdown
+        //
+        // So we've left it out for now
+
+        return new StaticJavaStub();
+    }
 }

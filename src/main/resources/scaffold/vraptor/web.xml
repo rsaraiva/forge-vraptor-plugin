@@ -18,6 +18,11 @@
       <dispatcher>FORWARD</dispatcher>
       <dispatcher>REQUEST</dispatcher>
    </filter-mapping>
+   
+   <context-param>
+       <param-name>br.com.caelum.vraptor.provider</param-name>
+       <param-value>@{basePackage}.provider.EntityManagerProvider</param-value>
+   </context-param>
 
    <error-page>
       <error-code>404</error-code>

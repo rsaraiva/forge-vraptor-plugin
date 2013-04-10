@@ -14,12 +14,20 @@ public class VRaptorScaffoldTest extends AbstractVRaptorScaffoldTest {
 
     @Test
     public void testGenerateFromEntity() throws Exception {
+        
         Project project = setupScaffoldProject();
 
-        queueInputLines("");
+        queueInputLines("", "");
         getShell().execute("entity --named Customer");
+        
+        queueInputLines("");
         getShell().execute("field string --named firstName");
+        
+        queueInputLines("");
         getShell().execute("field string --named lastName");
+        
+        queueInputLines("");
+        getShell().execute("field int --named age");
 
         queueInputLines("", "", "", "");
         getShell().execute("scaffold from-entity");

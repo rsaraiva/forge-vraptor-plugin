@@ -25,6 +25,7 @@ import org.jboss.forge.project.facets.JavaSourceFacet;
 import org.jboss.forge.project.facets.ResourceFacet;
 import org.jboss.forge.project.facets.WebResourceFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
+import org.jboss.forge.resources.FileResource;
 import org.jboss.forge.resources.Resource;
 import org.jboss.forge.scaffold.AccessStrategy;
 import org.jboss.forge.scaffold.ScaffoldProvider;
@@ -42,7 +43,9 @@ import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
 import org.jboss.seam.render.template.CompiledTemplateResource;
 import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
+import org.metawidget.statically.html.StaticHtmlMetawidget;
 import org.metawidget.statically.javacode.StaticJavaMetawidget;
+import org.metawidget.statically.jsp.StaticJspMetawidget;
 import org.metawidget.util.CollectionUtils;
 import org.metawidget.util.simple.StringUtils;
 
@@ -64,6 +67,11 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String INDEX_CONTROLLER_TEMPLATE = "scaffold/vraptor/IndexController.jv";
     private static final String CONTROLLER_TEMPLATE = "scaffold/vraptor/Controller.jv";
+    private static final String EM_PROVIDER_TEMPLATE = "scaffold/vraptor/EntityManagerProvider.jv";
+    private static final String SEARCH_TEMPLATE = "scaffold/vraptor/search.jsp";
+    private static final String CREATE_TEMPLATE = "scaffold/vraptor/create.jsp";
+    private static final String EDIT_TEMPLATE = "scaffold/vraptor/edit.jsp";
+    private static final String VIEW_TEMPLATE = "scaffold/vraptor/view.jsp";
     
     //
     // Protected members (nothing is private, to help subclassing)
@@ -80,8 +88,15 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource webXMLTemplate;
     protected CompiledTemplateResource indexControllerTemplate;
     protected CompiledTemplateResource controllerTemplate;
+    protected CompiledTemplateResource emProviderTemplate;
+    protected CompiledTemplateResource searchTemplate;
+    protected CompiledTemplateResource createTemplate;
+    protected CompiledTemplateResource editTemplate;
+    protected CompiledTemplateResource viewTemplate;
     protected int controllerTemplateQbeMetawidgetIndent;
+    protected int searchTemplateMetawidgetIndent;
     protected StaticJavaMetawidget qbeMetawidget;
+    protected StaticHtmlMetawidget searchMetawidget;
     
     private Configuration config;
 
@@ -147,23 +162,48 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             String template = Streams.toString(this.controllerTemplate.getSourceTemplateResource().getInputStream());
             this.controllerTemplateQbeMetawidgetIndent = parseIndent(template, "@{qbeMetawidget}");
         }
+        
+        if (this.searchTemplate == null) {
+            this.searchTemplate = this.compiler.compile(SEARCH_TEMPLATE);
+        }
+        
+        if (this.createTemplate == null) {
+            this.createTemplate = this.compiler.compile(CREATE_TEMPLATE);
+        }
+        
+        if (this.editTemplate == null) {
+            this.editTemplate = this.compiler.compile(EDIT_TEMPLATE);
+        }
+        
+        if (this.viewTemplate == null) {
+            this.viewTemplate = this.compiler.compile(VIEW_TEMPLATE);
+        }
+        
         if (this.errorTemplate == null) {
             this.errorTemplate = this.compiler.compile(ERROR_TEMPLATE);
         }
+        
         if (this.footerTemplate == null) {
             this.footerTemplate = this.compiler.compile(FOOTER_TEMPLATE);
         }
+        
         if (this.headerTemplate == null) {
             this.headerTemplate = this.compiler.compile(HEADER_TEMPLATE);
         }
+        
         if (this.indexTemplate == null) {
             this.indexTemplate = this.compiler.compile(INDEX_TEMPLATE);
         }
+        
         if (this.webXMLTemplate == null) {
             this.webXMLTemplate = compiler.compile(WEB_XML_TEMPLATE);
         }
         if (this.indexControllerTemplate == null) {
             this.indexControllerTemplate = compiler.compile(INDEX_CONTROLLER_TEMPLATE);
+        }
+        
+        if (this.emProviderTemplate == null) {
+            this.emProviderTemplate = compiler.compile(EM_PROVIDER_TEMPLATE);
         }
     }
 
@@ -213,7 +253,8 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("/resources/vraptor-logo.png"), getClass().getResourceAsStream(STATIC_RESOURCES_DIR + "/vraptor-logo.png"), overwrite));
 
         // web.xml
-
+        JavaSourceFacet java = this.project.getFacet(JavaSourceFacet.class);
+        context.put("basePackage", java.getBasePackage());
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"), this.webXMLTemplate.render(context), overwrite));
 
         return result;
@@ -248,6 +289,25 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         } catch (Exception e) {
             throw new RuntimeException("Error generating VRaptor scaffolding: IndexController", e);
+        }
+
+        return result;
+    }
+
+    private List<Resource<?>> generateEntityManagerProvider(String targetDir, Resource<?> template, boolean overwrite) {
+
+        List<Resource<?>> result = new ArrayList<Resource<?>>();
+        HashMap<Object, Object> context = getTemplateContext(targetDir, template);
+
+        try {
+            JavaSourceFacet java = project.getFacet(JavaSourceFacet.class);
+
+            JavaClass emProvider = JavaParser.parse(JavaClass.class, this.emProviderTemplate.render(context));
+            emProvider.setPackage(java.getBasePackage() + ".provider");
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(emProvider), emProvider.toString(), overwrite));
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating VRaptor scaffolding: EntityManagerProvider", e);
         }
 
         return result;
@@ -316,6 +376,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         resources.addAll(generateIndex(targetDir, template, overwrite));
         resources.addAll(generateIndexController(targetDir, template, overwrite));
+        resources.addAll(generateEntityManagerProvider(targetDir, template, overwrite));
         resources.addAll(addMavenDependencies());
         resources.addAll(addStaticScanningMavenPlugin());
 
@@ -340,18 +401,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     private void resetMetaWidgets() {
         ForgeConfigReader configReader = new ForgeConfigReader(this.config, this.project);
-
-//      this.entityMetawidget = new StaticHtmlMetawidget();
-//      this.entityMetawidget.setConfigReader(configReader);
-//      this.entityMetawidget.setConfig("scaffold/vraptor/metawidget-entity.xml");
-//
-//      this.searchMetawidget = new StaticHtmlMetawidget();
-//      this.searchMetawidget.setConfigReader(configReader);
-//      this.searchMetawidget.setConfig("scaffold/vraptor/metawidget-search.xml");
-//
-//      this.beanMetawidget = new StaticHtmlMetawidget();
-//      this.beanMetawidget.setConfigReader(configReader);
-//      this.beanMetawidget.setConfig("scaffold/vraptor/metawidget-bean.xml");
 
         this.qbeMetawidget = new StaticJavaMetawidget();
         this.qbeMetawidget.setConfigReader(configReader);
@@ -395,35 +444,67 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         try {
             JavaSourceFacet java = this.project.getFacet(JavaSourceFacet.class);
-            ResourceFacet resourceFacet = project.getFacet(ResourceFacet.class);
+            ResourceFacet resources = project.getFacet(ResourceFacet.class);
+            WebResourceFacet web = this.project.getFacet(WebResourceFacet.class);
 
             loadTemplates();
             
             // add class mapping to persistence.xml
-            Node persistenceXml = XMLParser.parse(resourceFacet.getResource("META-INF/persistence.xml").getResourceInputStream());
-            Node unit = persistenceXml.getSingle("persistence-unit");
+            FileResource<?> persistence = (FileResource<?>) resources.getResourceFolder().getChild("META-INF/persistence.xml");
+            Node persistenceNode = XMLParser.parse(persistence.getResourceInputStream());
+            Node unit = persistenceNode.getSingle("persistence-unit");
             unit.createChild("class").text(entity.getQualifiedName());
+            persistence.setContents(XMLParser.toXMLString(persistenceNode));
             
             // context
             Map<Object, Object> context = CollectionUtils.newHashMap();
             context.put("entity", entity);
             String ccEntity = StringUtils.decapitalize(entity.getName());
             context.put("ccEntity", ccEntity);
+            context.put("elIdValue", "${"+ccEntity+".id}");
             
             // Prepare qbeMetawidget
-            this.qbeMetawidget.setPath(entity.getQualifiedName());
             StringWriter stringWriter = new StringWriter();
+            this.qbeMetawidget.setPath(entity.getQualifiedName());
             this.qbeMetawidget.write(stringWriter, this.controllerTemplateQbeMetawidgetIndent);
             context.put("qbeMetawidget", stringWriter.toString().trim());
-            
-            //Set<String> qbeMetawidgetImports = this.qbeMetawidget.getImports();
-            //qbeMetawidgetImports.remove(entity.getQualifiedName());
-            //context.put("qbeMetawidgetImports", CollectionUtils.toString(qbeMetawidgetImports, ";\r\nimport ", true, false));
 
             // Create the Controller for this entity
             JavaClass controller = JavaParser.parse(JavaClass.class, this.controllerTemplate.render(context));
             controller.setPackage(java.getBasePackage() + ".view");
             result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(controller), controller.toString(), overwrite));
+            
+            EntityInspector entityInspector = new EntityInspector(Customer.class);
+            context.put("searchFormWidget", entityInspector.getSearchFormWidget());
+            context.put("searchTableHeaderWidget", entityInspector.getSearchTableHeaderWidget());
+            context.put("searchTableBodyWidget", entityInspector.getSearchTableBodyWidget());
+            context.put("viewWidget", entityInspector.getViewWidget());
+            
+            String jspDir = "jsp/";
+            jspDir += (targetDir != null && !targetDir.equals("")) ? targetDir + "/" : "";
+            
+            // Search
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt,
+                    web.getWebResource("WEB-INF/" + jspDir + ccEntity + "/search.jsp"),
+                    this.searchTemplate.render(context), overwrite));
+            
+            // Create
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt,
+                    web.getWebResource("WEB-INF/" + jspDir + ccEntity + "/create.jsp"),
+                    this.createTemplate.render(context), overwrite));
+            
+            // Edit
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt,
+                    web.getWebResource("WEB-INF/" + jspDir + ccEntity + "/edit.jsp"),
+                    this.editTemplate.render(context), overwrite));
+            
+            // View
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt,
+                    web.getWebResource("WEB-INF/" + jspDir + ccEntity + "/view.jsp"),
+                    this.viewTemplate.render(context), overwrite));
+            
+            // Generate navigation
+            //result.add(generateNavigation(targetDir, overwrite));
 
         } catch (Exception e) {
             throw new RuntimeException("Error generating vraptor scaffolding: " + e.getMessage(), e);

@@ -6,9 +6,13 @@ import br.com.caelum.vraptor.Post;
 import br.com.caelum.vraptor.Resource;
 import br.com.caelum.vraptor.Result;
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import java.util.ArrayList;
+import java.util.List;
 
 import @{entity.getQualifiedName()};
 
@@ -28,7 +32,7 @@ public class @{entity.getName()}Controller {
         result.include("customers", entityManager.createQuery("from @{entity.getName()} c").getResultList());
     }
     
-    private Predicate[] getSearchPredicates(Root<Customer> root, Customer example) {
+    private Predicate[] getSearchPredicates(Root<@{entity.getName()}> root, @{entity.getName()} example) {
         CriteriaBuilder builder = this.entityManager.getCriteriaBuilder();
         List<Predicate> predicatesList = new ArrayList<Predicate>();
         @{qbeMetawidget}

@@ -11,9 +11,9 @@
          </tbody>
       </table>
       <span class="buttons">
-         <a href="#" onclick="document.edit.submit()" class="btn btn-primary">Save</a>
+         <a href="#" onclick="document.edit.submit();" class="btn btn-primary">Save</a>
          <a href="<c:url value='/@{ccEntity}/search'/>" class="btn btn-primary">Cancel</a>
-         <a href="#" onclick="document.edit.action='<c:url value="/@{ccEntity}/delete"/>';document.edit.submit()" class="btn btn-primary">Delete</a>
+         <a href="#" onclick="document.edit.action='<c:url value="/@{ccEntity}/delete"/>';document.edit.submit();" class="btn btn-primary">Delete</a>
       </span>
    </form>
 

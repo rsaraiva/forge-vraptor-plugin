@@ -29,13 +29,13 @@ public class @{entity.getName()}Controller {
 
     @Get
     public void search() {
-        result.include("customers", entityManager.createQuery("from @{entity.getName()} c").getResultList());
+        result.include("entities", entityManager.createQuery("from @{entity.getName()} c").getResultList());
     }
     
     private Predicate[] getSearchPredicates(Root<@{entity.getName()}> root, @{entity.getName()} example) {
         CriteriaBuilder builder = this.entityManager.getCriteriaBuilder();
         List<Predicate> predicatesList = new ArrayList<Predicate>();
-        @{qbeMetawidget}
+        @{queryByExampleJavaCode}
         return predicatesList.toArray(new Predicate[predicatesList.size()]);
     }
 
@@ -45,35 +45,35 @@ public class @{entity.getName()}Controller {
         CriteriaQuery<@{entity.getName()}> criteria = builder.createQuery(@{entity.getName()}.class);
         Root<@{entity.getName()}> root = criteria.from(@{entity.getName()}.class);
         TypedQuery<@{entity.getName()}> query = this.entityManager.createQuery(criteria.select(root).where(getSearchPredicates(root, @{ccEntity})));
-        result.include("customers", query.getResultList());
+        result.include("entities", query.getResultList());
     }
 
     public void create() {
     }
 
-    @Path("/customer/view/{customer.id}")
+    @Path("/@{ccEntity}/view/{@{ccEntity}.id}")
     @Get
-    public void view(@{entity.getName()} customer) {
-        result.include("customer", entityManager.find(@{entity.getName()}.class, customer.getId()));
+    public void view(@{entity.getName()} @{ccEntity}) {
+        result.include("@{ccEntity}", entityManager.find(@{entity.getName()}.class, @{ccEntity}.getId()));
     }
 
-    @Path("/customer/edit/{customer.id}")
+    @Path("/@{ccEntity}/edit/{@{ccEntity}.id}")
     @Get
-    public void edit(@{entity.getName()} customer) {
-        result.include("customer", entityManager.find(@{entity.getName()}.class, customer.getId()));
+    public void edit(@{entity.getName()} @{ccEntity}) {
+        result.include("@{ccEntity}", entityManager.find(@{entity.getName()}.class, @{ccEntity}.getId()));
     }
 
-    public void save(@{entity.getName()} customer) {
-        if (customer.getId() == null) {
-            entityManager.persist(customer);
+    public void save(@{entity.getName()} @{ccEntity}) {
+        if (@{ccEntity}.getId() == null) {
+            entityManager.persist(@{ccEntity});
         } else {
-            entityManager.merge(customer);
+            entityManager.merge(@{ccEntity});
         }
         result.redirectTo(@{entity.getName()}Controller.class).search();
     }
     
-    public void delete(@{entity.getName()} customer) {
-        entityManager.remove(entityManager.find(@{entity.getName()}.class, customer.getId()));
+    public void delete(@{entity.getName()} @{ccEntity}) {
+        entityManager.remove(entityManager.find(@{entity.getName()}.class, @{ccEntity}.getId()));
         result.redirectTo(@{entity.getName()}Controller.class).search();
     }
 }

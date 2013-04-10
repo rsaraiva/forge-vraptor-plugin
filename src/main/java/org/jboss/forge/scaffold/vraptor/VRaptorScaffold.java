@@ -1,21 +1,22 @@
 package org.jboss.forge.scaffold.vraptor;
 
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.jboss.forge.env.Configuration;
 import org.jboss.forge.parser.JavaParser;
+import org.jboss.forge.parser.java.Field;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
+import org.jboss.forge.parser.xml.XMLParserException;
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
@@ -31,21 +32,16 @@ import org.jboss.forge.scaffold.AccessStrategy;
 import org.jboss.forge.scaffold.ScaffoldProvider;
 import org.jboss.forge.scaffold.TemplateStrategy;
 import org.jboss.forge.scaffold.util.ScaffoldUtil;
-import org.jboss.forge.scaffold.vraptor.metawidget.config.ForgeConfigReader;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.Help;
 import org.jboss.forge.shell.plugins.RequiresFacet;
-import org.jboss.forge.shell.util.Streams;
 import org.jboss.forge.spec.javaee.PersistenceFacet;
 import org.jboss.forge.spec.javaee.ServletFacet;
 import org.jboss.seam.render.TemplateCompiler;
 import org.jboss.seam.render.spi.TemplateResolver;
 import org.jboss.seam.render.template.CompiledTemplateResource;
 import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
-import org.metawidget.statically.html.StaticHtmlMetawidget;
-import org.metawidget.statically.javacode.StaticJavaMetawidget;
-import org.metawidget.statically.jsp.StaticJspMetawidget;
 import org.metawidget.util.CollectionUtils;
 import org.metawidget.util.simple.StringUtils;
 
@@ -93,10 +89,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource createTemplate;
     protected CompiledTemplateResource editTemplate;
     protected CompiledTemplateResource viewTemplate;
-    protected int controllerTemplateQbeMetawidgetIndent;
-    protected int searchTemplateMetawidgetIndent;
-    protected StaticJavaMetawidget qbeMetawidget;
-    protected StaticHtmlMetawidget searchMetawidget;
     
     private Configuration config;
 
@@ -157,10 +149,9 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     }
 
     protected void loadTemplates() {
+        
         if (this.controllerTemplate == null) {
             this.controllerTemplate = compiler.compile(CONTROLLER_TEMPLATE);
-            String template = Streams.toString(this.controllerTemplate.getSourceTemplateResource().getInputStream());
-            this.controllerTemplateQbeMetawidgetIndent = parseIndent(template, "@{qbeMetawidget}");
         }
         
         if (this.searchTemplate == null) {
@@ -214,7 +205,8 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         WebResourceFacet web = project.getFacet(WebResourceFacet.class);
 
         loadTemplates();
-        generateTemplates(targetDir, overwrite);
+        
+        //generateTemplates(targetDir, overwrite);
 
         HashMap<Object, Object> context = getTemplateContext(targetDir, template);
 
@@ -393,18 +385,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
      */
     @Override
     public void setProject(Project project) {
-        
         super.setProject(project);
-        
-        resetMetaWidgets();
-    }
-
-    private void resetMetaWidgets() {
-        ForgeConfigReader configReader = new ForgeConfigReader(this.config, this.project);
-
-        this.qbeMetawidget = new StaticJavaMetawidget();
-        this.qbeMetawidget.setConfigReader(configReader);
-        this.qbeMetawidget.setConfig("/scaffold/vraptor/metawidget-qbe.xml");
     }
 
     @Override
@@ -421,25 +402,23 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     public List<Resource<?>> generateTemplates(String targetDir, boolean overwrite) {
         List<Resource<?>> result = new ArrayList<Resource<?>>();
 
-        Map<Object, Object> context = CollectionUtils.newHashMap();
-        context.put("appName", StringUtils.uncamelCase(this.project.getProjectRoot().getName()));
-        context.put("targetDir", targetDir);
-
-        try {
-            WebResourceFacet web = this.project.getFacet(WebResourceFacet.class);
-            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("header.jsp"), this.headerTemplate.render(context), overwrite));
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating default templates", e);
-        }
+//        Map<Object, Object> context = CollectionUtils.newHashMap();
+//        context.put("appName", StringUtils.uncamelCase(this.project.getProjectRoot().getName()));
+//        context.put("targetDir", targetDir);
+//
+//        try {
+//            WebResourceFacet web = this.project.getFacet(WebResourceFacet.class);
+//            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("header.jsp"), this.headerTemplate.render(context), overwrite));
+//
+//        } catch (Exception e) {
+//            throw new RuntimeException("Error generating default templates", e);
+//        }
 
         return result;
     }
 
     @Override
     public List<Resource<?>> generateFromEntity(String targetDir, final Resource<?> template, final JavaClass entity, boolean overwrite) {
-        
-        resetMetaWidgets();
         
         List<Resource<?>> result = new ArrayList<Resource<?>>();
         try {
@@ -449,12 +428,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
             loadTemplates();
             
-            // add class mapping to persistence.xml
-            FileResource<?> persistence = (FileResource<?>) resources.getResourceFolder().getChild("META-INF/persistence.xml");
-            Node persistenceNode = XMLParser.parse(persistence.getResourceInputStream());
-            Node unit = persistenceNode.getSingle("persistence-unit");
-            unit.createChild("class").text(entity.getQualifiedName());
-            persistence.setContents(XMLParser.toXMLString(persistenceNode));
+            addPersistenceClassMapping(resources, entity);
             
             // context
             Map<Object, Object> context = CollectionUtils.newHashMap();
@@ -463,22 +437,18 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             context.put("ccEntity", ccEntity);
             context.put("elIdValue", "${"+ccEntity+".id}");
             
-            // Prepare qbeMetawidget
-            StringWriter stringWriter = new StringWriter();
-            this.qbeMetawidget.setPath(entity.getQualifiedName());
-            this.qbeMetawidget.write(stringWriter, this.controllerTemplateQbeMetawidgetIndent);
-            context.put("qbeMetawidget", stringWriter.toString().trim());
+            EntityInspector entityInspector = new EntityInspector(entity);
+            context.put("queryByExampleJavaCode", entityInspector.getQueryByExampleJavaCode());
+            context.put("searchFormWidget", entityInspector.getSearchFormWidget());
+            context.put("searchTableHeaderWidget", entityInspector.getSearchTableHeaderWidget());
+            context.put("searchTableBodyWidget", entityInspector.getSearchTableBodyWidget());
+            context.put("viewWidget", entityInspector.getViewWidget());
+            
 
             // Create the Controller for this entity
             JavaClass controller = JavaParser.parse(JavaClass.class, this.controllerTemplate.render(context));
             controller.setPackage(java.getBasePackage() + ".view");
             result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(controller), controller.toString(), overwrite));
-            
-            EntityInspector entityInspector = new EntityInspector(Customer.class);
-            context.put("searchFormWidget", entityInspector.getSearchFormWidget());
-            context.put("searchTableHeaderWidget", entityInspector.getSearchTableHeaderWidget());
-            context.put("searchTableBodyWidget", entityInspector.getSearchTableBodyWidget());
-            context.put("viewWidget", entityInspector.getViewWidget());
             
             String jspDir = "jsp/";
             jspDir += (targetDir != null && !targetDir.equals("")) ? targetDir + "/" : "";
@@ -503,8 +473,12 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
                     web.getWebResource("WEB-INF/" + jspDir + ccEntity + "/view.jsp"),
                     this.viewTemplate.render(context), overwrite));
             
-            // Generate navigation
-            //result.add(generateNavigation(targetDir, overwrite));
+            // Navigation
+            context.put("navigation", entityInspector.getNavigation(web, targetDir));
+            context.put("appName", StringUtils.uncamelCase(this.project.getProjectRoot().getName()));
+            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, 
+                    web.getWebResource("header.jsp"), 
+                    this.headerTemplate.render(context), overwrite));
 
         } catch (Exception e) {
             throw new RuntimeException("Error generating vraptor scaffolding: " + e.getMessage(), e);
@@ -516,5 +490,40 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     @Override
     public List<Resource<?>> getGeneratedResources(String targetDir) {
         throw new UnsupportedOperationException("getGeneratedResources - Not supported yet.");
+    }
+
+    private void addPersistenceClassMapping(ResourceFacet resources, final JavaClass entity) throws IllegalArgumentException, XMLParserException {
+        FileResource<?> persistence = (FileResource<?>) resources.getResourceFolder().getChild("META-INF/persistence.xml");
+        Node persistenceNode = XMLParser.parse(persistence.getResourceInputStream());
+        Node unit = persistenceNode.getSingle("persistence-unit");
+        
+        List<Node> propertiesNodes = unit.get("properties").get(0).getChildren();
+        
+        // new list
+        List<Node> nodes = new ArrayList<Node>();
+        for (int i = 0; i < unit.getChildren().size(); i++) {
+            Node node = unit.getChildren().get(i);
+            nodes.add(node);
+            if (node.getName().equals("non-jta-data-source")) {
+                nodes.add(new Node("class").text(entity.getQualifiedName()));
+            }
+        }
+        // clean unit chindren
+        while(!unit.getChildren().isEmpty()) {
+            unit.removeChild(unit.getChildren().get(0));
+        }
+        // create new list
+        for (Node node : nodes) {
+            unit.getOrCreate(node.getName()).text(node.getText());
+        }
+        // create properties list
+        for (Node node : propertiesNodes) {
+            Node child = unit.get("properties").get(0).createChild(node.getName());
+            Map<String, String> attributes = node.getAttributes();
+            for (Map.Entry<String, String> attribute : attributes.entrySet()) {
+                child.attribute(attribute.getKey(), attribute.getValue());
+            }
+        }
+        persistence.setContents(XMLParser.toXMLString(persistenceNode));
     }
 }

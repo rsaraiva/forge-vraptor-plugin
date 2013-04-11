@@ -18,18 +18,24 @@ public class VRaptorScaffoldTest extends AbstractVRaptorScaffoldTest {
         Project project = setupScaffoldProject();
 
         queueInputLines("", "");
-        getShell().execute("entity --named Customer");
+        getShell().execute("entity --named Group");
         
         queueInputLines("");
-        getShell().execute("field string --named firstName");
+        getShell().execute("field string --named name");
         
-        queueInputLines("");
-        getShell().execute("field string --named lastName");
-        
-        queueInputLines("");
-        getShell().execute("field int --named age");
-
         queueInputLines("", "", "", "");
+        getShell().execute("scaffold from-entity");
+        
+        queueInputLines("", "");
+        getShell().execute("entity --named Contact");
+        
+        queueInputLines("");
+        getShell().execute("field string --named name");
+        
+        //queueInputLines("");
+        //getShell().execute("field int --named age");
+
+        queueInputLines("", "", "", "", "");
         getShell().execute("scaffold from-entity");
     }
 }

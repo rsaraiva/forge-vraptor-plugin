@@ -3,7 +3,6 @@ package org.jboss.forge.scaffold.vraptor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +11,6 @@ import javax.inject.Inject;
 
 import org.jboss.forge.env.Configuration;
 import org.jboss.forge.parser.JavaParser;
-import org.jboss.forge.parser.java.Field;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
@@ -514,7 +512,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         }
         // create new list
         for (Node node : nodes) {
-            unit.getOrCreate(node.getName()).text(node.getText());
+            unit.createChild(node.getName()).text(node.getText());
         }
         // create properties list
         for (Node node : propertiesNodes) {

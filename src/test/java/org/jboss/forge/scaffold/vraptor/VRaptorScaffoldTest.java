@@ -32,6 +32,9 @@ public class VRaptorScaffoldTest extends AbstractVRaptorScaffoldTest {
         queueInputLines("");
         getShell().execute("field string --named name");
         
+        queueInputLines("");
+        getShell().execute("field manyToOne --named group --fieldType com.test.model.Group.java");
+        
         //queueInputLines("");
         //getShell().execute("field int --named age");
 

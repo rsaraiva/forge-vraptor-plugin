@@ -29,7 +29,8 @@ public class @{entity.getName()}Controller {
 
     @Get
     public void search() {
-        result.include("entities", entityManager.createQuery("from @{entity.getName()} c").getResultList());
+        result.include("entities", entityManager.createQuery("from @{entity.getName()} e").getResultList());
+        @{selectOptionsJavaCode}
     }
     
     private Predicate[] getSearchPredicates(Root<@{entity.getName()}> root, @{entity.getName()} example) {
@@ -46,9 +47,11 @@ public class @{entity.getName()}Controller {
         Root<@{entity.getName()}> root = criteria.from(@{entity.getName()}.class);
         TypedQuery<@{entity.getName()}> query = this.entityManager.createQuery(criteria.select(root).where(getSearchPredicates(root, @{ccEntity})));
         result.include("entities", query.getResultList());
+        @{selectOptionsJavaCode}
     }
 
     public void create() {
+        @{selectOptionsJavaCode}
     }
 
     @Path("/@{ccEntity}/view/{@{ccEntity}.id}")
@@ -61,6 +64,7 @@ public class @{entity.getName()}Controller {
     @Get
     public void edit(@{entity.getName()} @{ccEntity}) {
         result.include("@{ccEntity}", entityManager.find(@{entity.getName()}.class, @{ccEntity}.getId()));
+        @{selectOptionsJavaCode}
     }
 
     public void save(@{entity.getName()} @{ccEntity}) {

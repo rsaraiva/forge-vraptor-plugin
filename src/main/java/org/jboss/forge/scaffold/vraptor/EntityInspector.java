@@ -41,6 +41,7 @@ public class EntityInspector {
                 builder.append("if (").append(fieldName).append(" != null && !\"\".equals(").append(fieldName).append(")) {\n");
                 builder.append("predicatesList.add(builder.like(root.<String>get(\"").append(fieldName).append("\"), '%' + ").append(fieldName).append(" + '%'));\n");
                 builder.append("}\n");
+                continue;
             }
 
             // int or short
@@ -50,15 +51,41 @@ public class EntityInspector {
                 builder.append("if (").append(fieldName).append(" != 0) {\n");
                 builder.append("predicatesList.add(builder.equal(root.get(\"").append(fieldName).append("\"), ").append(fieldName).append("));\n");
                 builder.append("}\n");
+                continue;
             }
             
-            //todo: more types
+            // more types
+            builder.append(field.getQualifiedType()).append(" ").append(fieldName).append(" = example.get").append(StringUtils.capitalize(fieldName)).append("();\n");
+            builder.append("if (").append(fieldName).append(" != null) {\n");
+            builder.append("predicatesList.add(builder.equal(root.get(\"").append(fieldName).append("\"), ").append(fieldName).append("));\n");
+            builder.append("}\n");
+            continue;
         }
         
         return builder.toString();
     }
     
-    public String getSearchFormWidget() {
+    public String getSelectOptionsJavaCode() {
+        
+        StringBuilder builder = new StringBuilder();
+        
+        for (Field<JavaClass> field : entity.getFields()) {
+            
+            if (field.getName().equals("id") || field.getName().equals("version"))
+                continue;
+            
+            if ("String".equals(field.getType()) || "int".equals(field.getType()) || "short".equals(field.getType()) || "byte".equals(field.getType()))
+                continue;
+            
+            String fieldName = field.getName();
+            String capitalizedFieldName = StringUtils.capitalize(fieldName);
+            builder.append("result.include(\"").append(fieldName).append("Options\", entityManager.createQuery(\"from ").append(capitalizedFieldName).append(" e\").getResultList());\n");
+        }
+        
+        return builder.toString();
+    }
+    
+    public String getFormWidget() {
         
         StringBuilder builder = new StringBuilder();
         
@@ -70,13 +97,25 @@ public class EntityInspector {
             String fieldName = field.getName();
             String uncamelCaseFieldName = StringUtils.uncamelCase(fieldName);
             
-            builder.append("<tr>");
-            builder.append("  <td class=\"label\"><label for=\"").append(fieldName).append("\"> ").append(uncamelCaseFieldName).append(":</label></td>");
-            builder.append("  <td class=\"component\">");
-            builder.append("    <input id=\"").append(fieldName).append("\" type=\"text\" name=\"").append(decapitalizedClassName).append(".").append(fieldName).append("\" value=\"${").append(decapitalizedClassName).append(".").append(fieldName).append("}\" />");
-            builder.append("  </td>");
-            builder.append("  <td class=\"required\"></td>");
-            builder.append("</tr>");
+            builder.append("<tr>\n");
+            builder.append("  <td class=\"label\"><label for=\"").append(fieldName).append("\"> ").append(uncamelCaseFieldName).append(":</label></td>\n");
+            builder.append("  <td class=\"component\">\n");
+            
+            if ("String".equals(field.getType()) || "int".equals(field.getType()) || "short".equals(field.getType()) || "byte".equals(field.getType())) {
+                // input type="text"
+                builder.append("<input id=\"").append(fieldName).append("\" type=\"text\" name=\"").append(decapitalizedClassName).append(".").append(fieldName).append("\" value=\"${").append(decapitalizedClassName).append(".").append(fieldName).append("}\" />\n");
+            } else {
+                // select
+                builder.append("<select name=\"").append(decapitalizedClassName).append(".").append(fieldName).append(".id\">");
+                builder.append("<c:forEach items=\"${").append(fieldName).append("Options}\" var=\"option\">");
+                builder.append("<option value=\"${option.id}\" ${").append(decapitalizedClassName).append(".").append(fieldName).append(".id eq option.id ? 'selected' : '' }  >${option}</option>");
+                builder.append("</c:forEach>");
+                builder.append("</select>");
+            }
+            
+            builder.append("  </td>\n");
+            builder.append("  <td class=\"required\"></td>\n");
+            builder.append("</tr>\n");
         }
         
         return builder.toString();

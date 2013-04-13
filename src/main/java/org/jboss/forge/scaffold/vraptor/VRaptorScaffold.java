@@ -437,7 +437,8 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             
             EntityInspector entityInspector = new EntityInspector(entity);
             context.put("queryByExampleJavaCode", entityInspector.getQueryByExampleJavaCode());
-            context.put("searchFormWidget", entityInspector.getSearchFormWidget());
+            context.put("selectOptionsJavaCode", entityInspector.getSelectOptionsJavaCode());
+            context.put("searchFormWidget", entityInspector.getFormWidget());
             context.put("searchTableHeaderWidget", entityInspector.getSearchTableHeaderWidget());
             context.put("searchTableBodyWidget", entityInspector.getSearchTableBodyWidget());
             context.put("viewWidget", entityInspector.getViewWidget());

@@ -126,25 +126,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         context.put("targetDir", targetDir);
         return context;
     }
-    
-    /**
-     * Parses the given XML and determines the indent of the given String
-     * namespaces that Metawidget introduces.
-     */
-    protected int parseIndent(final String template, final String indentOf) {
-        int indent = 0;
-        int indexOf = template.indexOf(indentOf);
-
-        while ((indexOf >= 0) && (template.charAt(indexOf) != '\n')) {
-            if (template.charAt(indexOf) == '\t') {
-                indent++;
-            }
-
-            indexOf--;
-        }
-
-        return indent;
-    }
 
     protected void loadTemplates() {
         
@@ -373,14 +354,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         return resources;
     }
 
-    /**
-     * Overridden to setup the Metawidgets.
-     * <p>
-     * Metawidgets must be configured per project <em>and per Forge
-     * invocation</em>. It is not sufficient to simply configure them in
-     * <code>setup</code> because the user may restart Forge and not run
-     * <code>scaffold setup</code> a second time.
-     */
     @Override
     public void setProject(Project project) {
         super.setProject(project);
@@ -398,21 +371,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     @Override
     public List<Resource<?>> generateTemplates(String targetDir, boolean overwrite) {
-        List<Resource<?>> result = new ArrayList<Resource<?>>();
-
-//        Map<Object, Object> context = CollectionUtils.newHashMap();
-//        context.put("appName", StringUtils.uncamelCase(this.project.getProjectRoot().getName()));
-//        context.put("targetDir", targetDir);
-//
-//        try {
-//            WebResourceFacet web = this.project.getFacet(WebResourceFacet.class);
-//            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("header.jsp"), this.headerTemplate.render(context), overwrite));
-//
-//        } catch (Exception e) {
-//            throw new RuntimeException("Error generating default templates", e);
-//        }
-
-        return result;
+        return new ArrayList<Resource<?>>();
     }
 
     @Override

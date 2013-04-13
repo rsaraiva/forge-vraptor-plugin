@@ -6,7 +6,7 @@ import org.junit.Test;
 
 public class VRaptorScaffoldTest extends AbstractVRaptorScaffoldTest {
 
-    //@Test
+    @Test
     public void testSetupScaffold() throws Exception {
         Project project = setupScaffoldProject();
         Assert.assertTrue(project.hasFacet(VRaptorScaffold.class));

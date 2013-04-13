@@ -43,6 +43,9 @@ import org.jboss.seam.render.template.resolver.ClassLoaderTemplateResolver;
 import org.metawidget.util.CollectionUtils;
 import org.metawidget.util.simple.StringUtils;
 
+/**
+ * @author <a href="mailto:rubens.saraiva@gmail.com">Rubens Saraiva</a>
+ */
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
 @RequiresFacet({WebResourceFacet.class, DependencyFacet.class, PersistenceFacet.class})

@@ -8,6 +8,9 @@ import org.jboss.forge.resources.Resource;
 import org.jboss.forge.resources.ResourceFilter;
 import org.metawidget.util.simple.StringUtils;
 
+/**
+ * @author <a href="mailto:rubens.saraiva@gmail.com">Rubens Saraiva</a>
+ */
 public class EntityInspector {
     
     private String className;

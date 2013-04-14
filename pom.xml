@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.forge</groupId>
     <artifactId>forge-scaffold-vraptor</artifactId>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>plugin-vraptor</name>
     <description>Forge - Scaffold Provider for VRaptor</description>
     

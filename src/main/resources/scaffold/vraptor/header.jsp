@@ -13,7 +13,7 @@
    <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
          <div class="container">
-            <a id="brandLink" name="brandLink" href="<c:url value='/'/>" class="brand">@{appName}</a>
+            <a id="brandLink" href="<c:url value='/'/>" class="brand">@{appName}</a>
             <div class="nav-collapse collapse">
                <ul class="nav">
                   <li><a href="http://forge.jboss.org/docs/important_plugins/ui-scaffolding.html">How to Customize</a></li>
@@ -25,7 +25,7 @@
 
    <div class="container forgecontainer">
       <div id="navigation">
-         <a id="homeLink" name="homeLink" href="<c:url value='/'/>"> <img src="<c:url value="/resources/forge-logo.png"/>"
+         <a id="homeLink" href="<c:url value='/'/>"> <img src="<c:url value="/resources/forge-logo.png"/>"
             alt="Forge... get hammered" border="0" />
          </a>
          <ul>

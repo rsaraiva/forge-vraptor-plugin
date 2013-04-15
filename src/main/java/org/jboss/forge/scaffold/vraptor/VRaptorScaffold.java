@@ -34,6 +34,7 @@ import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.Help;
 import org.jboss.forge.shell.plugins.RequiresFacet;
+import org.jboss.forge.spec.javaee.JSTLFacet;
 import org.jboss.forge.spec.javaee.PersistenceFacet;
 import org.jboss.forge.spec.javaee.ServletFacet;
 import org.jboss.seam.render.TemplateCompiler;
@@ -48,8 +49,8 @@ import org.metawidget.util.simple.StringUtils;
  */
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
-@RequiresFacet({ VRaptorFacet.class, WebResourceFacet.class, ServletFacet.class, DependencyFacet.class,
-    PersistenceFacet.class })
+@RequiresFacet({ VRaptorFacet.class, WebResourceFacet.class, ServletFacet.class, JSTLFacet.class,
+    DependencyFacet.class, PersistenceFacet.class })
 public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     //

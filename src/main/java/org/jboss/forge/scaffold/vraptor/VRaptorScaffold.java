@@ -309,7 +309,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private List<Resource<?>> addStaticScanningMavenPlugin() {
 
         List<Resource<?>> result = new ArrayList<Resource<?>>();
-        WebResourceFacet web = project.getFacet(WebResourceFacet.class);
         FileResource<?> pomFile = project.getFacet(MavenCoreFacet.class).getPOMFile();
         Node pom = XMLParser.parse(pomFile.getResourceInputStream());
 
@@ -337,8 +336,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
             .createChild("fileset").attribute("dir", "${project.build.directory}/${project.build.finalName}");
         execution.createChild("goals").createChild("goal").text("run");
 
-        result.add(web.createWebResource(XMLParser.toXMLString(pom), pomFile.getFullyQualifiedName()));
-
+        pomFile.setContents(XMLParser.toXMLString(pom));
         return result;
     }
 

@@ -3,11 +3,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.jboss.forge</groupId>
-    <artifactId>forge-scaffold-vraptor</artifactId>
+    <groupId>com.rsaraiva</groupId>
+    <artifactId>vraptor-forge-plugin</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>plugin-vraptor</name>
-    <description>Forge - Scaffold Provider for VRaptor</description>
+    <name>vraptor-forge-plugin</name>
+    <description>VRaptor Forge Plugin</description>
 
     <properties>
         <forge.api.version>1.2.3.Final</forge.api.version>

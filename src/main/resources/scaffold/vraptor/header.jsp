@@ -31,6 +31,9 @@
          <ul>
             @{navigation}
          </ul>
+         <a id="vraptorLink" href="http://vraptor.caelum.com.br/en/" target="_blank">
+            <img src="<c:url value="/resources/vraptor-logo.png"/>" alt="Java MVC Framework" border="0" />
+         </a>
       </div>
 
       <div id="content">

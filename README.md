@@ -51,6 +51,7 @@ Deploying on JBoss AS 7
 
     forge install-plugin jboss-as-7
     as7 setup
+    as7 deploy (with the server on)
 
 Contribute
 ==========

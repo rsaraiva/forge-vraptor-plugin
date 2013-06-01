@@ -9,7 +9,6 @@ import java.util.Map;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
-import org.jboss.forge.maven.MavenCoreFacet;
 import org.jboss.forge.parser.JavaParser;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.parser.xml.Node;
@@ -58,8 +57,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private static final Dependency HSQLDB_DEPENDENCY = DependencyBuilder.create("hsqldb:hsqldb:1.8.0.10");
     private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder.create("org.hibernate:hibernate-entitymanager:3.6.6.Final:provided");
     private static final Dependency VRAPTOR_JPA_DEPENDENCY = DependencyBuilder.create("br.com.caelum.vraptor:vraptor-jpa:1.0.0");
-    private static final Dependency SPRING_WEB_DEPENDENCY = DependencyBuilder.create("org.springframework:spring-web:3.0.5.RELEASE");
-    private static final Dependency ASPECTJ_RT_DEPENDENCY = DependencyBuilder.create("org.aspectj:aspectjrt:1.6.9");
 
     private static final String ERROR_TEMPLATE = "scaffold/vraptor/error.jsp";
     private static final String FOOTER_TEMPLATE = "scaffold/vraptor/footer.jsp";
@@ -68,7 +65,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     private static final String INDEX_TEMPLATE = "scaffold/vraptor/index.jsp";
     private static final String INDEX_CONTROLLER_TEMPLATE = "scaffold/vraptor/IndexController.jv";
     private static final String CONTROLLER_TEMPLATE = "scaffold/vraptor/Controller.jv";
-    private static final String EM_PROVIDER_TEMPLATE = "scaffold/vraptor/EntityManagerProvider.jv";
     private static final String SEARCH_TEMPLATE = "scaffold/vraptor/search.jsp";
     private static final String CREATE_TEMPLATE = "scaffold/vraptor/create.jsp";
     private static final String EDIT_TEMPLATE = "scaffold/vraptor/edit.jsp";
@@ -89,7 +85,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
     protected CompiledTemplateResource webXMLTemplate;
     protected CompiledTemplateResource indexControllerTemplate;
     protected CompiledTemplateResource controllerTemplate;
-    protected CompiledTemplateResource emProviderTemplate;
     protected CompiledTemplateResource searchTemplate;
     protected CompiledTemplateResource createTemplate;
     protected CompiledTemplateResource editTemplate;
@@ -175,10 +170,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         if (this.indexControllerTemplate == null) {
             this.indexControllerTemplate = compiler.compile(INDEX_CONTROLLER_TEMPLATE);
         }
-
-        if (this.emProviderTemplate == null) {
-            this.emProviderTemplate = compiler.compile(EM_PROVIDER_TEMPLATE);
-        }
     }
 
     @Override
@@ -188,8 +179,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         WebResourceFacet web = project.getFacet(WebResourceFacet.class);
 
         loadTemplates();
-
-        // generateTemplates(targetDir, overwrite);
 
         HashMap<Object, Object> context = getTemplateContext(targetDir, template);
 
@@ -247,6 +236,18 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         result.add(ScaffoldUtil.createOrOverwrite(this.prompt, web.getWebResource("WEB-INF/web.xml"),
             this.webXMLTemplate.render(context), overwrite));
 
+        // web.xml - adding jpa provider config to vraptor 3.4.*
+        DependencyFacet deps = project.getFacet(DependencyFacet.class);
+        Dependency vraptorDep = deps.getManagedDependency(DependencyBuilder.create("br.com.caelum:vraptor"));
+        if (vraptorDep.getVersion().startsWith("3.4")) {
+            ServletFacet servletFacet = this.project.getFacet(ServletFacet.class);
+            Node webXML = XMLParser.parse(servletFacet.getConfigFile().getResourceInputStream());
+            Node contextParam = webXML.getOrCreate("context-param");
+            contextParam.createChild("param-name").text("br.com.caelum.vraptor.packages");
+            contextParam.createChild("param-value").text("br.com.caelum.vraptor.util.jpa");
+            servletFacet.getConfigFile().setContents(XMLParser.toXMLString(webXML));
+        }
+
         return result;
     }
 
@@ -287,60 +288,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         return result;
     }
 
-    private List<Resource<?>> generateEntityManagerProvider(String targetDir, Resource<?> template, boolean overwrite) {
-
-        List<Resource<?>> result = new ArrayList<Resource<?>>();
-        HashMap<Object, Object> context = getTemplateContext(targetDir, template);
-
-        try {
-            JavaSourceFacet java = project.getFacet(JavaSourceFacet.class);
-
-            JavaClass emProvider = JavaParser.parse(JavaClass.class, this.emProviderTemplate.render(context));
-            emProvider.setPackage(java.getBasePackage() + ".provider");
-            result.add(ScaffoldUtil.createOrOverwrite(this.prompt, java.getJavaResource(emProvider),
-                emProvider.toString(), overwrite));
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating VRaptor scaffolding: EntityManagerProvider", e);
-        }
-
-        return result;
-    }
-
-    private List<Resource<?>> addStaticScanningMavenPlugin() {
-
-        List<Resource<?>> result = new ArrayList<Resource<?>>();
-        FileResource<?> pomFile = project.getFacet(MavenCoreFacet.class).getPOMFile();
-        Node pom = XMLParser.parse(pomFile.getResourceInputStream());
-
-        Node plugin = pom.getSingle("build").getSingle("plugins").createChild("plugin");
-        plugin.createChild("groupId").text("org.apache.maven.plugins");
-        plugin.createChild("artifactId").text("maven-antrun-plugin");
-        plugin.createChild("version").text("1.7");
-
-        Node execution = plugin.createChild("executions").createChild("execution");
-        execution.createChild("id").text("static-scanning");
-        execution.createChild("phase").text("package");
-        execution.createChild("configuration").createChild("target").createChild("path")
-            .attribute("id", "build.classpath").createChild("fileset")
-            .attribute("dir", "${project.build.directory}/${project.build.finalName}/WEB-INF/lib")
-            .attribute("includes", "*.jar").getParent().getParent().createChild("java")
-            .attribute("classpathref", "build.classpath")
-            .attribute("classname", "br.com.caelum.vraptor.scan.VRaptorStaticScanning").attribute("fork", "true")
-            .createChild("arg")
-            .attribute("value", "${project.build.directory}/${project.build.finalName}/WEB-INF/web.xml").getParent()
-            .createChild("classpath").attribute("refid", "build.classpath").getParent().createChild("classpath")
-            .attribute("path", "${project.build.directory}/${project.build.finalName}/WEB-INF/classes").getParent()
-            .getParent().createChild("war")
-            .attribute("destfile", "${project.build.directory}/${project.build.finalName}.war")
-            .attribute("webxml", "${project.build.directory}/${project.build.finalName}/WEB-INF/web.xml")
-            .createChild("fileset").attribute("dir", "${project.build.directory}/${project.build.finalName}");
-        execution.createChild("goals").createChild("goal").text("run");
-
-        pomFile.setContents(XMLParser.toXMLString(pom));
-        return result;
-    }
-
     private List<Resource<?>> addMavenDependencies() {
 
         DependencyFacet deps = project.getFacet(DependencyFacet.class);
@@ -351,8 +298,6 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
         Dependency vraptorDep = deps.getManagedDependency(DependencyBuilder.create("br.com.caelum:vraptor"));
         if (vraptorDep.getVersion().startsWith("3.5")) {
             deps.addDirectDependency(VRAPTOR_JPA_DEPENDENCY);
-            deps.addDirectDependency(SPRING_WEB_DEPENDENCY);
-            deps.addDirectDependency(ASPECTJ_RT_DEPENDENCY);
         }
 
         return new ArrayList<Resource<?>>();
@@ -365,9 +310,7 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         resources.addAll(generateIndex(targetDir, template, overwrite));
         resources.addAll(generateIndexController(targetDir, template, overwrite));
-        resources.addAll(generateEntityManagerProvider(targetDir, template, overwrite));
         resources.addAll(addMavenDependencies());
-        resources.addAll(addStaticScanningMavenPlugin());
 
         return resources;
     }

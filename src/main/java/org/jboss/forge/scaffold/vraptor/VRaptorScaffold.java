@@ -49,16 +49,17 @@ import org.metawidget.util.simple.StringUtils;
  */
 @Alias("vraptor")
 @Help("VRaptor scaffolding")
-@RequiresFacet({ VRaptorFacet.class, WebResourceFacet.class, ServletFacet.class, JSTLFacet.class,
-    DependencyFacet.class, PersistenceFacet.class })
+@RequiresFacet({ VRaptorFacet.class, WebResourceFacet.class, ServletFacet.class, JSTLFacet.class, DependencyFacet.class, PersistenceFacet.class })
 public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
     //
     // Private statics
     //
     private static final Dependency HSQLDB_DEPENDENCY = DependencyBuilder.create("hsqldb:hsqldb:1.8.0.10");
-    private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder
-        .create("org.hibernate:hibernate-entitymanager:3.6.6.Final:provided");
+    private static final Dependency HIBERNATE_DEPENDENCY = DependencyBuilder.create("org.hibernate:hibernate-entitymanager:3.6.6.Final:provided");
+    private static final Dependency VRAPTOR_JPA_DEPENDENCY = DependencyBuilder.create("br.com.caelum.vraptor:vraptor-jpa:1.0.0");
+    private static final Dependency SPRING_WEB_DEPENDENCY = DependencyBuilder.create("org.springframework:spring-web:3.0.5.RELEASE");
+    private static final Dependency ASPECTJ_RT_DEPENDENCY = DependencyBuilder.create("org.aspectj:aspectjrt:1.6.9");
 
     private static final String ERROR_TEMPLATE = "scaffold/vraptor/error.jsp";
     private static final String FOOTER_TEMPLATE = "scaffold/vraptor/footer.jsp";
@@ -346,6 +347,13 @@ public class VRaptorScaffold extends BaseFacet implements ScaffoldProvider {
 
         deps.addDirectDependency(HIBERNATE_DEPENDENCY);
         deps.addDirectDependency(HSQLDB_DEPENDENCY);
+
+        Dependency vraptorDep = deps.getManagedDependency(DependencyBuilder.create("br.com.caelum:vraptor"));
+        if (vraptorDep.getVersion().startsWith("3.5")) {
+            deps.addDirectDependency(VRAPTOR_JPA_DEPENDENCY);
+            deps.addDirectDependency(SPRING_WEB_DEPENDENCY);
+            deps.addDirectDependency(ASPECTJ_RT_DEPENDENCY);
+        }
 
         return new ArrayList<Resource<?>>();
     }
